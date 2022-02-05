@@ -25,13 +25,8 @@ public class CustomerService {
         log.debug("Getting customers");
         List<CustomerEntity> customerEntities = customerRepository.findAll();
 
-        List<CustomerDto> result = customerEntities.stream().map(customerEntity ->
-            CustomerDto.builder()
-                .id(customerEntity.getId())
-                .name(customerEntity.getName())
-                .surname(customerEntity.getSurname())
-                .photo(customerEntity.getPhoto())
-                .build()
+        List<CustomerDto> result = customerEntities.stream().map(
+            this::mapCustomerEntityToCustomerDto
         ).collect(Collectors.toList());
 
         log.debug("{} customers found", result.size());

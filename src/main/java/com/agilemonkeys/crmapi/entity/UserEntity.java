@@ -20,14 +20,16 @@ import javax.persistence.Id;
 @Builder
 @ToString
 @Entity
-public class CustomerEntity {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy= GenerationType.AUTO)
     private Long id;
+    @Column(nullable = false, unique = true)
+    private String username;
     @Column(nullable = false)
-    private String name;
-    private String surname;
-    private String photo;
-
+    private String password;
+    private String firstName;
+    private String lastName;
+    private String roles;
 }
