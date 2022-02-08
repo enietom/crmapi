@@ -3,6 +3,8 @@ package com.agilemonkeys.crmapi.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
+
 @Data
 @Builder
 public class CustomerDto {
@@ -11,5 +13,7 @@ public class CustomerDto {
     private String name;
     private String surname;
     private String photo;
+    private Long lastModifiedBy;
+    private Instant lastModifiedDate;
 
 }

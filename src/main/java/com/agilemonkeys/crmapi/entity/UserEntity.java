@@ -20,7 +20,7 @@ import javax.persistence.Id;
 @Builder
 @ToString
 @Entity
-public class UserEntity {
+public class UserEntity extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy= GenerationType.AUTO)

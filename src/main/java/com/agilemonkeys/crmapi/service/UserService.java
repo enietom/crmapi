@@ -38,12 +38,11 @@ public class UserService implements UserDetailsService {
     }
 
     public AuthUserDto registerUser(AuthUserDto authUserDto) {
-        Optional<UserEntity> duplicated = userRepository.findByUsername(authUserDto.getUsername());
 
         if (!authUserDto.getPassword().equals(authUserDto.getMatchingPassword())) {
             throw new BadCredentialsException("Confirmation Password doesn't match");
         }
-        if (duplicated.isPresent()) {
+        if (isUserDuplicated(authUserDto.getUsername())) {
             throw new BadCredentialsException("Username is already used");
         }
 
@@ -57,6 +56,11 @@ public class UserService implements UserDetailsService {
         log.debug("User {} registered successfully", userEntity.getUsername());
 
         return mapAuthUserEntityToAuthUserDto(userEntity);
+    }
+
+    private boolean isUserDuplicated(String username) {
+        Optional<UserEntity> duplicated = userRepository.findByUsername(username);
+        return duplicated.isPresent();
     }
 
     public List<UserDto> getUsers() {
@@ -84,6 +88,11 @@ public class UserService implements UserDetailsService {
 
     public UserDto createUser(UserDto userDto) {
         log.debug("Creating new user");
+
+        if (isUserDuplicated(userDto.getUsername())) {
+            throw new BadCredentialsException("Username is already used");
+        }
+
         UserEntity userEntity = mapUserDtoToUserEntity(userDto);
 
         UserEntity newUserEntity = userRepository.save(userEntity);
@@ -135,6 +144,8 @@ public class UserService implements UserDetailsService {
             .firstName(userEntity.getFirstName())
             .lastName(userEntity.getLastName())
             .roles(userEntity.getRoles())
+            .lastModifiedBy(userEntity.getLastModifiedBy())
+            .lastModifiedDate(userEntity.getLastModifiedDate())
             .build();
     }
 
