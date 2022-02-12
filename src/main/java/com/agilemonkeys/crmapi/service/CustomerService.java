@@ -3,10 +3,14 @@ package com.agilemonkeys.crmapi.service;
 import com.agilemonkeys.crmapi.dto.CustomerDto;
 import com.agilemonkeys.crmapi.entity.CustomerEntity;
 import com.agilemonkeys.crmapi.repository.CustomerRepository;
+import com.cloudinary.Cloudinary;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -16,8 +20,11 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    private final NotificationService notificationService;
+
+    public CustomerService(CustomerRepository customerRepository, NotificationService notificationService) {
         this.customerRepository = customerRepository;
+        this.notificationService = notificationService;
     }
 
     public List<CustomerDto> getCustomers() {
@@ -61,7 +68,7 @@ public class CustomerService {
         return newCustomerDto;
     }
 
-    public void createCustomerBulk(List<CustomerDto> customerDtos) {
+    public void createCustomerBulk(List<CustomerDto> customerDtos) throws IOException {
         List<CustomerEntity> customerEntities = customerDtos.stream()
             .filter(this::isValidCustomerDto)
             .map(this::mapCustomerDtoToCustomerEntity)
@@ -69,9 +76,24 @@ public class CustomerService {
 
         customerEntities = customerRepository.saveAll(customerEntities);
 
-        // TODO: Send an email with the summary of the uploads
-
+        StringBuilder bodyBuilder = new StringBuilder();
+        bodyBuilder.append(customerEntities.size());
+        bodyBuilder.append(" customers created successfully!!! These are the following:");
+        customerEntities
+                .forEach(customer -> bodyBuilder
+                    .append("\n > ")
+                    .append(customer.getId())
+                    .append(" - ")
+                    .append(customer.getName())
+                    .append(" ")
+                    .append(customer.getSurname())
+                );
         log.debug("{} Customers created successfully", customerEntities.size());
+
+        if (!customerEntities.isEmpty()) {
+            // Sending notification to admin
+            notificationService.sendEmail("CRM API - CSV Upload was successful", bodyBuilder.toString());
+        }
     }
 
     public CustomerDto updateCustomer(Long customerId, CustomerDto customerDto) {
@@ -89,6 +111,35 @@ public class CustomerService {
 
         log.debug("Customer updated successfully {}", updatedCustomerDto);
 
+        return updatedCustomerDto;
+    }
+
+    public CustomerDto uploadCustomerPhoto(Long customerId, File file) {
+        log.debug("Updating photo for customer with id {}", customerId);
+
+        CustomerEntity customerEntity = customerRepository.findById(customerId).orElseThrow();
+
+        Cloudinary cloudinary = new Cloudinary(Map.of(
+            "cloud_name", System.getenv("CLOUDINARY_CLOUD_NAME"),
+            "api_key", System.getenv("CLOUDINARY_API_KEY"),
+            "api_secret", System.getenv("CLOUDINARY_API_SECRET")
+        ));
+
+        String photoName = "photo_" + customerId;
+        try {
+            Map uploadResponse = cloudinary.uploader().upload(file,
+                Map.of("public_id", photoName));
+
+            customerEntity.setPhoto((String) uploadResponse.get("url"));
+            customerRepository.save(customerEntity);
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
+
+        CustomerDto updatedCustomerDto = mapCustomerEntityToCustomerDto(customerEntity);
+
+        log.debug("Customer photo updated successfully {}", updatedCustomerDto);
         return updatedCustomerDto;
     }
 

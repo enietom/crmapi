@@ -8,7 +8,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,12 +16,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 @Slf4j
 public class CustomerController {
 
-    private CustomerService customerService;
+    private final CustomerService customerService;
 
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
@@ -94,6 +93,17 @@ public class CustomerController {
     @PutMapping("/{customerId}")
     public CustomerDto updateCustomer(@PathVariable Long customerId, @RequestBody CustomerDto customerDto) {
         return customerService.updateCustomer(customerId, customerDto);
+    }
+
+    @PostMapping(value = "/{customerId}/photo", consumes = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.IMAGE_GIF_VALUE, MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE})
+    public CustomerDto uploadCustomerPhoto(@PathVariable Long customerId, HttpServletRequest request) throws IOException {
+        // create a temporary file
+        Path tempFile = Files.createTempFile(customerId.toString(), null);
+
+        // Writes a string to the above temporary file
+        Files.write(tempFile, request.getInputStream().readAllBytes());
+
+        return customerService.uploadCustomerPhoto(customerId, tempFile.toFile());
     }
 
     @DeleteMapping("/{customerId}")

@@ -18,7 +18,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
 	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
+	implementation 'com.sendgrid:sendgrid-java:4.0.1'
+	implementation group: 'com.cloudinary', name: 'cloudinary', version: '1.0.14'
+
 	runtimeOnly 'mysql:mysql-connector-java'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
